@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="還款計算機" />
+  <meta name="theme-color" content="#1F4E79" />
+  <title>還款計算機</title>
+  <style>
+    :root {
+      --primary: #1F4E79;
+      --primary-light: #2F5496;
+      --success: #548235;
+      --danger: #C00000;
+      --warning: #FFF2CC;
+      --calc: #E2EFDA;
+      --bg: #F5F7FA;
+      --card: #FFFFFF;
+      --text: #1A1A1A;
+      --muted: #666666;
+      --border: #D0D7DE;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 16px 20px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    header p {
+      font-size: 0.75rem;
+      opacity: 0.85;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      padding: 16px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .summary-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 12px 8px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-card .label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .summary-card .value {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .summary-card.total .value { color: var(--danger); }
+    .summary-card.paid .value { color: var(--success); }
+    .summary-card.remain .value { color: var(--danger); }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      padding: 0 16px 12px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      font-family: inherit;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-secondary {
+      background: #E8EEF5;
+      color: var(--primary);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+    }
+
+    .btn-pay-custom {
+      background: #2E75B6;
+      color: white;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+    }
+
+    .btn-danger {
+      background: #FCE4D6;
+      color: var(--danger);
+      padding: 6px 10px;
+      font-size: 0.75rem;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      padding: 6px 10px;
+      font-size: 0.75rem;
+    }
+
+    .list {
+      padding: 0 16px 20px;
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      background: #F0F4F8;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-header .title {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .card-header .seq {
+      background: var(--primary);
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-right: 8px;
+    }
+
+    .card-body {
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+      font-size: 0.85rem;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-bottom: 1px;
+    }
+
+    .field .val {
+      font-weight: 500;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    .remain-box {
+      grid-column: 1 / -1;
+      background: #FFF5F5;
+      border: 1px solid #F5C6C6;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .remain-box .amount {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--danger);
+    }
+
+    .remain-box .periods {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 14px 14px;
+      border-top: 1px solid #F0F0F0;
+    }
+
+    .card-actions .btn-success,
+    .card-actions .btn-pay-custom {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 20px;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal h2 {
+      font-size: 1.15rem;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: #FAFBFC;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal-actions .btn { flex: 1; padding: 12px; }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 300;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #E5E7EB;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .progress-bar .fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), #70AD47);
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      z-index: 50;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+
+    .hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 8px 16px 0;
+    }
+
+    /* Custom pay modal specific */
+    .pay-hint {
+      background: #F0F7FF;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      color: var(--primary);
+      text-align: center;
+    }
+
+    .quick-amounts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .quick-amounts button {
+      flex: 1;
+      min-width: 70px;
+      padding: 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .quick-amounts button:active {
+      background: #E8EEF5;
+    }
+
+    @media (min-width: 600px) {
+      .summary { grid-template-columns: 1fr 1fr 1fr; }
+      .card-body { grid-template-columns: 1fr 1fr 1fr; }
+      .modal { border-radius: 16px; margin-bottom: 40px; }
+      .modal-overlay { align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>還款計算機</h1>
+    <p>一鍵記錄 · 自動計算剩餘金額</p>
+  </header>
+
+  <div class="summary">
+    <div class="summary-card total">
+      <div class="label">全部累計金額</div>
+      <div class="value" id="totalAll">NT$0</div>
+    </div>
+    <div class="summary-card paid">
+      <div class="label">全部已還金額</div>
+      <div class="value" id="totalPaid">NT$0</div>
+    </div>
+    <div class="summary-card remain">
+      <div class="label">全部剩餘金額</div>
+      <div class="value" id="totalRemain">NT$0</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openAddModal()">＋ 新增還款項目</button>
+    <button class="btn btn-secondary" onclick="exportData()">匯出</button>
+  </div>
+
+  <p class="hint">「還一期」快速記一筆固定金額　｜　「還多少錢」可輸入任意金額</p>
+
+  <div class="list" id="list"></div>
+
+  <!-- Add / Edit Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2 id="modalTitle">新增還款項目</h2>
+      <input type="hidden" id="editId" />
+
+      <div class="form-group">
+        <label>日期</label>
+        <input type="date" id="fDate" />
+      </div>
+
+      <div class="form-group">
+        <label>帳戶 / 銀行</label>
+        <input type="text" id="fAccount" placeholder="例如：中國信託信用卡" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>金額（本金）</label>
+          <input type="number" id="fAmount" placeholder="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label>利息金額</label>
+          <input type="number" id="fInterest" placeholder="0" min="0" value="0" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>事由</label>
+        <input type="text" id="fReason" placeholder="例如：消費分期、個人信貸" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>還款期數</label>
+          <input type="number" id="fPeriods" placeholder="12" min="1" />
+        </div>
+        <div class="form-group">
+          <label>單期金額</label>
+          <input type="number" id="fPeriodAmt" placeholder="自動建議" min="0" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>已還期數</label>
+          <input type="number" id="fPaidPeriods" placeholder="0" min="0" value="0" />
+        </div>
+        <div class="form-group">
+          <label>備註</label>
+          <input type="text" id="fNote" placeholder="選填" />
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveItem()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Pay Modal -->
+  <div class="modal-overlay" id="payModal">
+    <div class="modal">
+      <h2>這次還多少錢？</h2>
+      <input type="hidden" id="payItemId" />
+
+      <div class="pay-hint" id="payHint">
+        目前剩餘：NT$0
+      </div>
+
+      <div class="quick-amounts" id="quickAmounts">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="form-group">
+        <label>輸入還款金額</label>
+        <input type="number" id="fPayAmount" placeholder="請輸入金額" min="1" inputmode="numeric" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closePayModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmPay()">確認還款</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <footer>
+    <button class="btn btn-outline" onclick="clearAllData()">清除全部資料</button>
+  </footer>
+
+  <script>
+    const STORAGE_KEY = 'repayment_calculator_v2';
+
+    let items = [];
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        items = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        items = [];
+      }
+
+      // migrate old data if needed (from v1)
+      if (items.length === 0) {
+        try {
+          const old = localStorage.getItem('repayment_calculator_v1');
+          if (old) {
+            items = JSON.parse(old);
+            items.forEach(it => {
+              if (it.actualPaid === undefined) {
+                it.actualPaid = (it.paidPeriods || 0) * (it.periodAmt || 0);
+              }
+            });
+            save();
+          }
+        } catch (e) {}
+      }
+
+      // seed sample if still empty
+      if (items.length === 0) {
+        items = [
+          {
+            id: Date.now() - 3,
+            date: '2025-01-15',
+            account: '中國信託信用卡',
+            amount: 30000,
+            interest: 2400,
+            reason: '消費分期',
+            periods: 12,
+            periodAmt: 2700,
+            paidPeriods: 3,
+            actualPaid: 8100,
+            note: '每月15日扣款'
+          },
+          {
+            id: Date.now() - 2,
+            date: '2025-03-01',
+            account: '玉山銀行貸款',
+            amount: 120000,
+            interest: 12000,
+            reason: '個人信貸',
+            periods: 24,
+            periodAmt: 5500,
+            paidPeriods: 5,
+            actualPaid: 27500,
+            note: '本息攤還'
+          },
+          {
+            id: Date.now() - 1,
+            date: '2025-06-20',
+            account: '親友借款',
+            amount: 50000,
+            interest: 0,
+            reason: '周轉金',
+            periods: 10,
+            periodAmt: 5000,
+            paidPeriods: 2,
+            actualPaid: 10000,
+            note: '無息，每月還5千'
+          }
+        ];
+        save();
+      } else {
+        // ensure actualPaid exists
+        items.forEach(it => {
+          if (it.actualPaid === undefined) {
+            it.actualPaid = (it.paidPeriods || 0) * (it.periodAmt || 0);
+          }
+        });
+      }
+      render();
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function fmt(n) {
+      return 'NT$' + Math.round(n || 0).toLocaleString('zh-TW');
+    }
+
+    function getTotal(item) {
+      return (item.amount || 0) + (item.interest || 0);
+    }
+
+    function getActualPaid(item) {
+      return item.actualPaid !== undefined ? item.actualPaid : (item.paidPeriods || 0) * (item.periodAmt || 0);
+    }
+
+    function calcRemain(item) {
+      return Math.max(0, getTotal(item) - getActualPaid(item));
+    }
+
+    function calcRemainPeriods(item) {
+      // estimate remaining periods based on remaining money
+      const remain = calcRemain(item);
+      if (!item.periodAmt || item.periodAmt <= 0) return Math.max(0, (item.periods || 0) - (item.paidPeriods || 0));
+      return Math.ceil(remain / item.periodAmt);
+    }
+
+    function render() {
+      let totalAll = 0, totalPaid = 0, totalRemain = 0;
+
+      items.forEach(item => {
+        const total = getTotal(item);
+        const paid = getActualPaid(item);
+        const remain = Math.max(0, total - paid);
+        totalAll += total;
+        totalPaid += Math.min(paid, total);
+        totalRemain += remain;
+      });
+
+      document.getElementById('totalAll').textContent = fmt(totalAll);
+      document.getElementById('totalPaid').textContent = fmt(totalPaid);
+      document.getElementById('totalRemain').textContent = fmt(totalRemain);
+
+      const list = document.getElementById('list');
+      if (items.length === 0) {
+        list.innerHTML = `
+          <div class="empty">
+            <div style="font-size:48px;opacity:0.3">📋</div>
+            <p>尚無還款項目<br>點上方「新增還款項目」開始記錄</p>
+          </div>`;
+        return;
+      }
+
+      const sorted = [...items].sort((a, b) => calcRemain(b) - calcRemain(a));
+
+      list.innerHTML = sorted.map((item) => {
+        const remain = calcRemain(item);
+        const remainP = calcRemainPeriods(item);
+        const total = getTotal(item);
+        const paid = getActualPaid(item);
+        const progress = total > 0 ? Math.min(100, (paid / total * 100)) : 0;
+        const isDone = remain <= 0;
+
+        return `
+          <div class="card" style="${isDone ? 'opacity:0.65' : ''}">
+            <div class="card-header">
+              <div class="title">
+                <span class="seq">#${items.indexOf(item) + 1}</span>
+                ${escapeHtml(item.account || '未命名帳戶')}
+              </div>
+              <div style="font-size:0.75rem;color:var(--muted)">${item.date || ''}</div>
+            </div>
+            <div class="card-body">
+              <div class="field">
+                <label>金額（本金）</label>
+                <div class="val">${fmt(item.amount || 0)}</div>
+              </div>
+              <div class="field">
+                <label>利息</label>
+                <div class="val">${fmt(item.interest || 0)}</div>
+              </div>
+              <div class="field">
+                <label>事由</label>
+                <div class="val">${escapeHtml(item.reason || '—')}</div>
+              </div>
+              <div class="field">
+                <label>單期金額</label>
+                <div class="val">${fmt(item.periodAmt || 0)}</div>
+              </div>
+              <div class="field">
+                <label>已還 / 總期數</label>
+                <div class="val">${item.paidPeriods || 0} / ${item.periods || 0}</div>
+              </div>
+              <div class="field">
+                <label>進度</label>
+                <div class="val">${progress.toFixed(0)}%</div>
+                <div class="progress-bar"><div class="fill" style="width:${progress}%"></div></div>
+              </div>
+              ${item.note ? `<div class="field full"><label>備註</label><div class="val">${escapeHtml(item.note)}</div></div>` : ''}
+              <div class="remain-box">
+                <div>
+                  <div class="periods">預估剩餘 ${remainP} 期</div>
+                  <div class="amount">${isDone ? '已還清 ✓' : fmt(remain)}</div>
+                </div>
+                <div style="text-align:right;font-size:0.75rem;color:var(--muted)">
+                  已還<br>${fmt(Math.min(paid, total))}
+                </div>
+              </div>
+            </div>
+            <div class="card-actions">
+              ${!isDone ? `
+                <button class="btn btn-success" onclick="payOne('${item.id}')">還一期（${fmt(item.periodAmt || 0)}）</button>
+                <button class="btn btn-pay-custom" onclick="openPayModal('${item.id}')">還多少錢</button>
+              ` : ''}
+              <button class="btn btn-outline" onclick="openEditModal('${item.id}')">編輯</button>
+              <button class="btn btn-danger" onclick="deleteItem('${item.id}')">刪除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = '新增還款項目';
+      document.getElementById('editId').value = '';
+      document.getElementById('fDate').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('fAccount').value = '';
+      document.getElementById('fAmount').value = '';
+      document.getElementById('fInterest').value = '0';
+      document.getElementById('fReason').value = '';
+      document.getElementById('fPeriods').value = '';
+      document.getElementById('fPeriodAmt').value = '';
+      document.getElementById('fPaidPeriods').value = '0';
+      document.getElementById('fNote').value = '';
+      document.getElementById('modal').classList.add('show');
+    }
+
+    function openEditModal(id) {
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+      document.getElementById('modalTitle').textContent = '編輯還款項目';
+      document.getElementById('editId').value = item.id;
+      document.getElementById('fDate').value = item.date || '';
+      document.getElementById('fAccount').value = item.account || '';
+      document.getElementById('fAmount').value = item.amount || '';
+      document.getElementById('fInterest').value = item.interest || 0;
+      document.getElementById('fReason').value = item.reason || '';
+      document.getElementById('fPeriods').value = item.periods || '';
+      document.getElementById('fPeriodAmt').value = item.periodAmt || '';
+      document.getElementById('fPaidPeriods').value = item.paidPeriods || 0;
+      document.getElementById('fNote').value = item.note || '';
+      document.getElementById('modal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('show');
+    }
+
+    function saveItem() {
+      const id = document.getElementById('editId').value;
+      const amount = parseFloat(document.getElementById('fAmount').value) || 0;
+      const interest = parseFloat(document.getElementById('fInterest').value) || 0;
+      let periods = parseInt(document.getElementById('fPeriods').value) || 0;
+      let periodAmt = parseFloat(document.getElementById('fPeriodAmt').value) || 0;
+      let paidPeriods = parseInt(document.getElementById('fPaidPeriods').value) || 0;
+
+      if (!periodAmt && periods > 0) {
+        periodAmt = Math.round((amount + interest) / periods);
+      }
+
+      const data = {
+        date: document.getElementById('fDate').value,
+        account: document.getElementById('fAccount').value.trim(),
+        amount,
+        interest,
+        reason: document.getElementById('fReason').value.trim(),
+        periods,
+        periodAmt,
+        paidPeriods,
+        note: document.getElementById('fNote').value.trim()
+      };
+
+      if (!data.account && !data.amount) {
+        showToast('請至少填寫帳戶或金額');
+        return;
+      }
+
+      if (id) {
+        const idx = items.findIndex(i => String(i.id) === String(id));
+        if (idx >= 0) {
+          // keep existing actualPaid if periods didn't change much, otherwise recalculate
+          const old = items[idx];
+          data.actualPaid = old.actualPaid !== undefined ? old.actualPaid : paidPeriods * periodAmt;
+          // if user changed paidPeriods, sync actualPaid
+          if (paidPeriods !== old.paidPeriods) {
+            data.actualPaid = paidPeriods * periodAmt;
+          }
+          items[idx] = { ...old, ...data };
+        }
+      } else {
+        data.actualPaid = paidPeriods * periodAmt;
+        items.push({ id: Date.now(), ...data });
+      }
+
+      save();
+      render();
+      closeModal();
+      showToast(id ? '已更新' : '已新增');
+    }
+
+    // ===== 還一期 =====
+    function payOne(id) {
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+
+      const remain = calcRemain(item);
+      if (remain <= 0) {
+        showToast('已經還清了');
+        return;
+      }
+
+      const payAmt = Math.min(item.periodAmt || 0, remain);
+      item.actualPaid = getActualPaid(item) + payAmt;
+      item.paidPeriods = (item.paidPeriods || 0) + 1;
+      if (item.paidPeriods > item.periods) item.paidPeriods = item.periods;
+
+      save();
+      render();
+      showToast(`已記錄還一期 +${fmt(payAmt)}`);
+    }
+
+    // ===== 還多少錢 =====
+    function openPayModal(id) {
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+
+      const remain = calcRemain(item);
+      document.getElementById('payItemId').value = id;
+      document.getElementById('payHint').innerHTML = `
+        <strong>${escapeHtml(item.account || '')}</strong><br>
+        目前剩餘：<strong>${fmt(remain)}</strong>　｜　單期：${fmt(item.periodAmt || 0)}
+      `;
+      document.getElementById('fPayAmount').value = '';
+
+      // quick amount buttons
+      const quick = document.getElementById('quickAmounts');
+      const suggestions = [];
+      if (item.periodAmt > 0) suggestions.push(item.periodAmt);
+      if (item.periodAmt > 0) suggestions.push(item.periodAmt * 2);
+      if (remain > 0 && remain !== item.periodAmt) suggestions.push(remain);
+      // unique
+      const uniq = [...new Set(suggestions)].filter(v => v > 0 && v <= remain);
+
+      quick.innerHTML = uniq.map(v =>
+        `<button type="button" onclick="document.getElementById('fPayAmount').value=${v}">${fmt(v)}</button>`
+      ).join('') || '<span style="font-size:0.8rem;color:#999">無快捷金額</span>';
+
+      document.getElementById('payModal').classList.add('show');
+      setTimeout(() => document.getElementById('fPayAmount').focus(), 300);
+    }
+
+    function closePayModal() {
+      document.getElementById('payModal').classList.remove('show');
+    }
+
+    function confirmPay() {
+      const id = document.getElementById('payItemId').value;
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+
+      let payAmt = parseFloat(document.getElementById('fPayAmount').value) || 0;
+      if (payAmt <= 0) {
+        showToast('請輸入有效金額');
+        return;
+      }
+
+      const remain = calcRemain(item);
+      if (payAmt > remain) {
+        if (!confirm(`輸入金額（${fmt(payAmt)}）超過剩餘（${fmt(remain)}），是否改為還清？`)) return;
+        payAmt = remain;
+      }
+
+      item.actualPaid = getActualPaid(item) + payAmt;
+
+      // update paidPeriods estimate
+      if (item.periodAmt > 0) {
+        item.paidPeriods = Math.min(
+          item.periods || 999,
+          Math.floor(item.actualPaid / item.periodAmt)
+        );
+      }
+
+      save();
+      render();
+      closePayModal();
+      showToast(`已記錄還款 +${fmt(payAmt)}`);
+    }
+
+    function deleteItem(id) {
+      if (!confirm('確定要刪除這個項目嗎？')) return;
+      items = items.filter(i => String(i.id) !== String(id));
+      save();
+      render();
+      showToast('已刪除');
+    }
+
+    function clearAllData() {
+      if (!confirm('確定要清除全部資料嗎？此操作無法復原。')) return;
+      items = [];
+      save();
+      render();
+      showToast('已清除全部資料');
+    }
+
+    function exportData() {
+      const lines = [
+        '序號,日期,帳戶,金額,事由,還款期數,單期金額,利息金额,已還期數,已還金額,剩餘期數,剩餘金額,備註'
+      ];
+      items.forEach((item, i) => {
+        const remain = calcRemain(item);
+        const remainP = calcRemainPeriods(item);
+        const paid = getActualPaid(item);
+        lines.push([
+          i + 1,
+          item.date || '',
+          `"${(item.account || '').replace(/"/g, '""')}"`,
+          item.amount || 0,
+          `"${(item.reason || '').replace(/"/g, '""')}"`,
+          item.periods || 0,
+          item.periodAmt || 0,
+          item.interest || 0,
+          item.paidPeriods || 0,
+          Math.round(paid),
+          remainP,
+          Math.round(remain),
+          `"${(item.note || '').replace(/"/g, '""')}"`
+        ].join(','));
+      });
+      const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `還款記錄_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('已匯出 CSV');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // Auto-calc period amount suggestion
+    document.getElementById('fAmount').addEventListener('input', suggestPeriodAmt);
+    document.getElementById('fInterest').addEventListener('input', suggestPeriodAmt);
+    document.getElementById('fPeriods').addEventListener('input', suggestPeriodAmt);
+
+    function suggestPeriodAmt() {
+      const amt = parseFloat(document.getElementById('fAmount').value) || 0;
+      const interest = parseFloat(document.getElementById('fInterest').value) || 0;
+      const periods = parseInt(document.getElementById('fPeriods').value) || 0;
+      const current = document.getElementById('fPeriodAmt').value;
+      if (periods > 0 && !current) {
+        document.getElementById('fPeriodAmt').placeholder = `建議 ${Math.round((amt + interest) / periods)}`;
+      }
+    }
+
+    // Close modals on overlay click
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+    document.getElementById('payModal').addEventListener('click', function(e) {
+      if (e.target === this) closePayModal();
+    });
+
+    // Enter key on pay amount
+    document.getElementById('fPayAmount').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') confirmPay();
+    });
+
+    load();
+  </script>
+</body>
+</html>
