@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="還款計算機" />
+  <meta name="theme-color" content="#1F4E79" />
+  <title>還款計算機</title>
+  <style>
+    :root {
+      --primary: #1F4E79;
+      --primary-light: #2F5496;
+      --success: #548235;
+      --danger: #C00000;
+      --warning: #FFF2CC;
+      --calc: #E2EFDA;
+      --bg: #F5F7FA;
+      --card: #FFFFFF;
+      --text: #1A1A1A;
+      --muted: #666666;
+      --border: #D0D7DE;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 16px 20px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    header p {
+      font-size: 0.75rem;
+      opacity: 0.85;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      padding: 16px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .summary-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 12px 8px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-card .label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .summary-card .value {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .summary-card.total .value { color: var(--danger); }
+    .summary-card.paid .value { color: var(--success); }
+    .summary-card.remain .value { color: var(--danger); }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 16px 12px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      font-family: inherit;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-secondary {
+      background: #E8EEF5;
+      color: var(--primary);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+    }
+
+    .btn-pay-custom {
+      background: #2E75B6;
+      color: white;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+    }
+
+    .btn-danger {
+      background: #FCE4D6;
+      color: var(--danger);
+      padding: 6px 10px;
+      font-size: 0.75rem;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      padding: 6px 10px;
+      font-size: 0.75rem;
+    }
+
+    .list {
+      padding: 0 16px 20px;
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      background: #F0F4F8;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-header .title {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .card-header .seq {
+      background: var(--primary);
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-right: 8px;
+    }
+
+    .card-body {
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+      font-size: 0.85rem;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-bottom: 1px;
+    }
+
+    .field .val {
+      font-weight: 500;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    .remain-box {
+      grid-column: 1 / -1;
+      background: #FFF5F5;
+      border: 1px solid #F5C6C6;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .remain-box .amount {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--danger);
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border: 1.5px solid var(--border, #ccc);
+      background: #fff;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: #555;
+    }
+    .mode-btn.active {
+      border-color: #1F4E79;
+      background: #1F4E79;
+      color: #fff;
+      font-weight: 600;
+    }
+    .badge-flex {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #fff3cd;
+      color: #8a6300;
+      margin-left: 6px;
+    }
+    .remain-box .periods {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 14px 14px;
+      border-top: 1px solid #F0F0F0;
+    }
+
+    .card-actions .btn-success,
+    .card-actions .btn-pay-custom {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 20px;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal h2 {
+      font-size: 1.15rem;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: #FAFBFC;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal-actions .btn { flex: 1; padding: 12px; }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 300;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #E5E7EB;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .progress-bar .fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), #70AD47);
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      z-index: 50;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+
+    .hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 8px 16px 0;
+    }
+
+    /* 還款進度 */
+    .sch-month {
+      background: #F0F4F8;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .sch-month-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+      user-select: none;
+    }
+    .sch-month-head .sch-total { color: #1F4E79; }
+    .sch-month-body { padding: 0 8px 8px; }
+    .sch-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .sch-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .sch-item-main { flex: 1; min-width: 0; }
+    .sch-item-name { font-weight: 600; font-size: 0.9rem; }
+    .sch-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: #E8EEF5;
+      color: #1F4E79;
+      margin-left: 6px;
+    }
+    .sch-badge.paid { background: #E2EFDA; color: #548235; }
+    .sch-badge.overdue { background: #FCE4D6; color: #C00000; }
+    .sch-item-right { text-align: right; flex-shrink: 0; }
+    .sch-item-amt { font-weight: 700; font-size: 0.95rem; }
+    .sch-item-date { font-size: 0.7rem; color: var(--muted); }
+
+    /* Custom pay modal specific */
+    .pay-hint {
+      background: #F0F7FF;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      color: var(--primary);
+      text-align: center;
+    }
+
+    .quick-amounts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .quick-amounts button {
+      flex: 1;
+      min-width: 70px;
+      padding: 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .quick-amounts button:active {
+      background: #E8EEF5;
+    }
+
+    @media (min-width: 600px) {
+      .summary { grid-template-columns: 1fr 1fr 1fr; }
+      .card-body { grid-template-columns: 1fr 1fr 1fr; }
+      .modal { border-radius: 16px; margin-bottom: 40px; }
+      .modal-overlay { align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>還款計算機</h1>
+    <p>一鍵記錄 · 自動計算剩餘金額</p>
+  </header>
+
+  <div class="summary">
+    <div class="summary-card total">
+      <div class="label">全部累計金額</div>
+      <div class="value" id="totalAll">NT$0</div>
+    </div>
+    <div class="summary-card paid">
+      <div class="label">全部已還金額</div>
+      <div class="value" id="totalPaid">NT$0</div>
+    </div>
+    <div class="summary-card remain">
+      <div class="label">全部剩餘金額</div>
+      <div class="value" id="totalRemain">NT$0</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openAddModal()">＋ 新增還款項目</button>
+    <button class="btn btn-secondary" onclick="exportData()">匯出</button>
+    <button class="btn btn-secondary" onclick="openPlanModal()">建議還款計劃</button>
+    <button class="btn btn-secondary" onclick="openStatsModal()">年度統計</button>
+    <button class="btn btn-secondary" onclick="openHistoryModal()">還款明細</button>
+    <button class="btn btn-secondary" onclick="openScheduleModal()">還款進度</button>
+  </div>
+
+  <p class="hint">「還一期」快速記一筆固定金額　｜　「還多少錢」可輸入任意金額　｜　記錄時可確認還款日期</p>
+
+  <div class="list" id="list"></div>
+
+  <!-- Add / Edit Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2 id="modalTitle">新增還款項目</h2>
+      <input type="hidden" id="editId" />
+      <input type="hidden" id="fMode" value="installment" />
+
+      <div class="form-group">
+        <label>還款模式</label>
+        <div class="mode-toggle">
+          <button type="button" class="mode-btn active" id="modeBtnInstallment" onclick="selectMode('installment')">分期（固定期數/金額）</button>
+          <button type="button" class="mode-btn" id="modeBtnFlexible" onclick="selectMode('flexible')">不分期（彈性還款）</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>日期</label>
+        <input type="date" id="fDate" />
+      </div>
+
+      <div class="form-group">
+        <label>帳戶 / 銀行</label>
+        <input type="text" id="fAccount" placeholder="例如：中國信託信用卡" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>金額（本金）</label>
+          <input type="number" id="fAmount" placeholder="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label>利息金額</label>
+          <input type="number" id="fInterest" placeholder="0" min="0" value="0" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>事由</label>
+        <input type="text" id="fReason" placeholder="例如：消費分期、個人信貸" />
+      </div>
+
+      <div class="form-row" id="installmentFieldsRow1">
+        <div class="form-group">
+          <label>還款期數</label>
+          <input type="number" id="fPeriods" placeholder="12" min="1" onchange="onPeriodsChange()" />
+        </div>
+        <div class="form-group" id="periodAmtGroup">
+          <label>單期金額</label>
+          <input type="number" id="fPeriodAmt" placeholder="自動建議" min="0" />
+        </div>
+      </div>
+
+      <div class="form-group" id="installmentVariableToggleRow">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
+          <input type="checkbox" id="fVariableAmounts" onchange="toggleVariableAmounts()" style="width:18px;height:18px" />
+          每期還款金額不同（可各期分別設定）
+        </label>
+      </div>
+
+      <div class="form-group" id="variableAmountsContainer" style="display:none">
+        <label>各期金額</label>
+        <div id="variableAmountsList"></div>
+        <button type="button" class="btn btn-secondary" style="margin-top:6px;width:100%" onclick="generateVariableRows()">依期數重新產生欄位</button>
+      </div>
+
+      <div class="form-row" id="installmentFieldsRow2">
+        <div class="form-group">
+          <label>已還期數</label>
+          <input type="number" id="fPaidPeriods" placeholder="0" min="0" value="0" />
+        </div>
+        <div class="form-group">
+          <label>備註</label>
+          <input type="text" id="fNote" placeholder="選填" />
+        </div>
+      </div>
+
+      <div class="form-row" id="flexibleFieldsRow" style="display:none">
+        <div class="form-group">
+          <label>已還金額</label>
+          <input type="number" id="fFlexPaid" placeholder="0" min="0" value="0" />
+        </div>
+        <div class="form-group">
+          <label>備註</label>
+          <input type="text" id="fNoteFlex" placeholder="選填" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>提醒日期（選填，會加入 Google 日曆，每月自動重複提醒直到還清）</label>
+        <input type="date" id="fReminderDate" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveItem()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Pay Modal -->
+  <div class="modal-overlay" id="payModal">
+    <div class="modal">
+      <h2>這次還多少錢？</h2>
+      <input type="hidden" id="payItemId" />
+
+      <div class="pay-hint" id="payHint">
+        目前剩餘：NT$0
+      </div>
+
+      <div class="quick-amounts" id="quickAmounts">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="form-group">
+        <label>輸入還款金額</label>
+        <input type="number" id="fPayAmount" placeholder="請輸入金額" min="1" inputmode="numeric" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closePayModal()">取消</button>
+        <button class="btn btn-primary" onclick="goToPayDateConfirm()">下一步：確認還款日期</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pay Date Confirm Modal (還一期 / 還多少錢 共用) -->
+  <div class="modal-overlay" id="payDateModal">
+    <div class="modal">
+      <h2>確認還款時間</h2>
+      <input type="hidden" id="payDateItemId" />
+      <input type="hidden" id="payDateAmount" />
+      <input type="hidden" id="payDateIsOnePeriod" value="0" />
+
+      <div class="pay-hint" id="payDateHint">
+        請確認這次還款的日期與金額
+      </div>
+
+      <div class="form-group">
+        <label>還款日期</label>
+        <input type="date" id="fPayDate" />
+      </div>
+
+      <div class="form-group">
+        <label>還款金額（不可改，僅供確認）</label>
+        <input type="text" id="fPayDateAmtDisplay" readonly style="background:#F0F4F8;font-weight:700;color:#1F4E79" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closePayDateModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmPayWithDate()">確認並記錄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment History Modal -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal" style="max-width:520px">
+      <h2>還款時間明細清單</h2>
+      <div class="form-group">
+        <label>篩選帳戶（選填）</label>
+        <select id="fHistoryAccount" onchange="renderHistory()">
+          <option value="">全部帳戶</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>篩選年份</label>
+        <select id="fHistoryYear" onchange="renderHistory()">
+          <option value="">全部年份</option>
+        </select>
+      </div>
+      <div id="historySummary" style="margin-bottom:10px;font-size:0.85rem;color:var(--muted)"></div>
+      <div id="historyList" style="max-height:50vh;overflow-y:auto"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeHistoryModal()">關閉</button>
+        <button class="btn btn-outline" onclick="exportHistory()">匯出明細 CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 還款進度（依月份） Modal -->
+  <div class="modal-overlay" id="scheduleModal">
+    <div class="modal" style="max-width:520px">
+      <h2>還款進度</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>篩選帳戶</label>
+          <select id="fScheduleAccount" onchange="renderSchedule()">
+            <option value="">全部帳戶</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>顯示範圍</label>
+          <select id="fScheduleRange" onchange="renderSchedule()">
+            <option value="all">全部月份</option>
+            <option value="upcoming">未還清期數</option>
+            <option value="thisyear">今年</option>
+          </select>
+        </div>
+      </div>
+      <div id="scheduleSummary" style="margin-bottom:10px;font-size:0.85rem;color:var(--muted)"></div>
+      <div id="scheduleList" style="max-height:55vh;overflow-y:auto"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeScheduleModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-overlay" id="planModal">
+    <div class="modal">
+      <h2>建議還款計劃</h2>
+
+      <div class="form-group">
+        <label style="font-weight:700">本月哪些款項到期了？</label>
+        <div id="planDueList" style="font-size:0.85rem;color:var(--text)"></div>
+      </div>
+
+      <div class="form-group" style="margin-top:16px;border-top:1px solid var(--border,#eee);padding-top:16px">
+        <label style="font-weight:700">這個月有多少預算可以還款？</label>
+        <input type="number" id="fPlanBudget" placeholder="例如：50000" min="0" inputmode="numeric" />
+        <button type="button" class="btn btn-primary" style="margin-top:8px;width:100%" onclick="calcPlan()">計算建議分配</button>
+      </div>
+
+      <div id="planResult" style="margin-top:12px"></div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closePlanModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="statsModal">
+    <div class="modal" style="max-width:480px">
+      <h2>年度還款統計</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>選擇年度</label>
+          <select id="fStatsYear" onchange="renderStats()"></select>
+        </div>
+        <div class="form-group">
+          <label>年度目標金額</label>
+          <input type="number" id="fYearGoal" placeholder="例如：600000" min="0" inputmode="numeric" />
+        </div>
+      </div>
+      <button type="button" class="btn btn-secondary" style="width:100%;margin-bottom:12px" onclick="saveYearGoalInput()">儲存這個年度的目標</button>
+
+      <div id="statsSummary" style="margin-bottom:12px"></div>
+
+      <div class="mode-toggle" style="margin-bottom:10px">
+        <button type="button" class="mode-btn active" id="statsViewChartBtn" onclick="setStatsView('chart')">圖表檢視</button>
+        <button type="button" class="mode-btn" id="statsViewListBtn" onclick="setStatsView('list')">明細列表</button>
+      </div>
+
+      <div id="statsChart"></div>
+      <div id="statsList" style="display:none"></div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeStatsModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <button class="btn btn-outline" onclick="clearAllData()">清除全部資料</button>
+  </footer>
+
+  <script>
+    const STORAGE_KEY = 'repayment_calculator_v3';
+    const INIT_KEY = 'repayment_calculator_inited_v3';
+    const LOG_KEY = 'repayment_calculator_paymentlog_v1';
+    const GOALS_KEY = 'repayment_calculator_yeargoals_v1';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzv4X4w1bGY2VSbsoDu2w1XNbRJ-Y_rPJYjJwTCDL60LUNc7mvfLmME_nb7f9GvD6Um_w/exec';
+
+    let items = [];
+    let storageOk = true;
+    let paymentLog = [];
+    let yearGoals = {};
+
+    function loadLocalExtras() {
+      try {
+        const rawLog = localStorage.getItem(LOG_KEY);
+        paymentLog = rawLog ? JSON.parse(rawLog) : [];
+      } catch (e) { paymentLog = []; }
+      try {
+        const rawGoals = localStorage.getItem(GOALS_KEY);
+        yearGoals = rawGoals ? JSON.parse(rawGoals) : {};
+      } catch (e) { yearGoals = {}; }
+    }
+
+    function savePaymentLog() {
+      try { localStorage.setItem(LOG_KEY, JSON.stringify(paymentLog)); } catch (e) {}
+    }
+
+    function saveYearGoals() {
+      try { localStorage.setItem(GOALS_KEY, JSON.stringify(yearGoals)); } catch (e) {}
+    }
+
+    function logPayment(item, amount, dateStr) {
+      paymentLog.push({
+        date: dateStr || new Date().toISOString().slice(0, 10),
+        amount: amount,
+        account: item.account || '未命名帳戶',
+        itemId: item.id
+      });
+      savePaymentLog();
+    }
+
+    function canUseStorage() {
+      try {
+        const t = '__storage_test__';
+        localStorage.setItem(t, t);
+        localStorage.removeItem(t);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function load() {
+      storageOk = canUseStorage();
+
+      if (!storageOk) {
+        items = [];
+        render();
+        setTimeout(() => {
+          alert('⚠️ 目前無法儲存資料（可能是無痕模式）。\n\n請改用一般模式開啟，或把網站「加入主畫面」後再使用，資料才不會消失。');
+        }, 500);
+        return;
+      }
+
+      // 1) 先讀本機快取，讓畫面立刻有東西可看
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        items = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        items = [];
+      }
+      items.forEach(it => {
+        if (it.actualPaid === undefined) {
+          it.actualPaid = (it.paidPeriods || 0) * (it.periodAmt || 0);
+        }
+      });
+      render();
+
+      // 2) 再向雲端試算表要最新資料
+      showToast('雲端同步中…');
+      try {
+        const res = await fetch(GAS_URL);
+        const cloudData = await res.json();
+        const cloudItems = Array.isArray(cloudData) ? cloudData : (cloudData.items || []);
+        const cloudLog = Array.isArray(cloudData.paymentLog) ? cloudData.paymentLog : null;
+        const cloudGoals = cloudData.yearGoals && typeof cloudData.yearGoals === 'object' ? cloudData.yearGoals : null;
+
+        if (Array.isArray(cloudItems) && cloudItems.length > 0) {
+          // 雲端已有資料，以雲端為準
+          items = cloudItems.map(it => ({
+            ...it,
+            actualPaid: it.actualPaid !== undefined && it.actualPaid !== ''
+              ? it.actualPaid
+              : (it.paidPeriods || 0) * (it.periodAmt || 0)
+          }));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+          localStorage.setItem(INIT_KEY, '1');
+          render();
+        } else if (items.length > 0) {
+          // 雲端是空的，但本機已有資料 → 把本機資料搬上雲端
+          await syncToCloud();
+          showToast('已將本機資料搬到雲端');
+        }
+
+        if (cloudLog && cloudLog.length > 0) {
+          paymentLog = cloudLog;
+          savePaymentLog();
+        } else if (paymentLog.length > 0) {
+          syncToCloud();
+        }
+
+        if (cloudGoals && Object.keys(cloudGoals).length > 0) {
+          yearGoals = cloudGoals;
+          saveYearGoals();
+        } else if (Object.keys(yearGoals).length > 0) {
+          syncToCloud();
+        }
+      } catch (e) {
+        showToast('雲端連線失敗，暫時顯示本機資料');
+      }
+    }
+
+    function save() {
+      if (!storageOk) {
+        showToast('無法儲存：請關閉無痕模式');
+        return;
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+        localStorage.setItem(INIT_KEY, '1');
+      } catch (e) {
+        storageOk = false;
+        showToast('儲存失敗，請關閉無痕模式');
+      }
+      syncToCloud();
+    }
+
+    async function syncToCloud() {
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'saveAll', items, paymentLog, yearGoals })
+        });
+        const result = await res.json();
+        if (result && result.success) {
+          if (Array.isArray(result.items)) {
+            items = result.items;
+            if (storageOk) localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+          }
+          if (Array.isArray(result.paymentLog)) {
+            paymentLog = result.paymentLog;
+            savePaymentLog();
+          }
+          if (result.yearGoals && typeof result.yearGoals === 'object') {
+            yearGoals = result.yearGoals;
+            saveYearGoals();
+          }
+        }
+      } catch (e) {
+        showToast('雲端同步失敗，請檢查網路連線');
+      }
+    }
+
+    function fmt(n) {
+      return 'NT$' + Math.round(n || 0).toLocaleString('zh-TW');
+    }
+
+    function getTotal(item) {
+      return (item.amount || 0) + (item.interest || 0);
+    }
+
+    function getActualPaid(item) {
+      return item.actualPaid !== undefined ? item.actualPaid : (item.paidPeriods || 0) * (item.periodAmt || 0);
+    }
+
+    function calcRemain(item) {
+      return Math.max(0, getTotal(item) - getActualPaid(item));
+    }
+
+    function calcRemainPeriods(item) {
+      if (item.variableAmounts) {
+        return Math.max(0, (item.periods || 0) - (item.paidPeriods || 0));
+      }
+      // estimate remaining periods based on remaining money
+      const remain = calcRemain(item);
+      if (!item.periodAmt || item.periodAmt <= 0) return Math.max(0, (item.periods || 0) - (item.paidPeriods || 0));
+      return Math.ceil(remain / item.periodAmt);
+    }
+
+    function render() {
+      let totalAll = 0, totalPaid = 0, totalRemain = 0;
+
+      items.forEach(item => {
+        const total = getTotal(item);
+        const paid = getActualPaid(item);
+        const remain = Math.max(0, total - paid);
+        totalAll += total;
+        totalPaid += Math.min(paid, total);
+        totalRemain += remain;
+      });
+
+      document.getElementById('totalAll').textContent = fmt(totalAll);
+      document.getElementById('totalPaid').textContent = fmt(totalPaid);
+      document.getElementById('totalRemain').textContent = fmt(totalRemain);
+
+      const list = document.getElementById('list');
+      if (items.length === 0) {
+        list.innerHTML = `
+          <div class="empty">
+            <div style="font-size:48px;opacity:0.3">📋</div>
+            <p>尚無還款項目<br>點上方「新增還款項目」開始記錄</p>
+          </div>`;
+        return;
+      }
+
+      const sorted = [...items].sort((a, b) => calcRemain(b) - calcRemain(a));
+
+      list.innerHTML = sorted.map((item) => {
+        const remain = calcRemain(item);
+        const remainP = calcRemainPeriods(item);
+        const total = getTotal(item);
+        const paid = getActualPaid(item);
+        const progress = total > 0 ? Math.min(100, (paid / total * 100)) : 0;
+        const isDone = remain <= 0;
+        const isFlex = item.mode === 'flexible';
+
+        return `
+          <div class="card" style="${isDone ? 'opacity:0.65' : ''}">
+            <div class="card-header">
+              <div class="title">
+                <span class="seq">#${items.indexOf(item) + 1}</span>
+                ${escapeHtml(item.account || '未命名帳戶')}
+                ${isFlex ? '<span class="badge-flex">不分期</span>' : ''}
+              </div>
+              <div style="font-size:0.75rem;color:var(--muted)">${item.date || ''}</div>
+            </div>
+            <div class="card-body">
+              <div class="field">
+                <label>金額（本金）</label>
+                <div class="val">${fmt(item.amount || 0)}</div>
+              </div>
+              <div class="field">
+                <label>利息</label>
+                <div class="val">${fmt(item.interest || 0)}</div>
+              </div>
+              <div class="field">
+                <label>事由</label>
+                <div class="val">${escapeHtml(item.reason || '—')}</div>
+              </div>
+              ${!isFlex ? `
+                <div class="field">
+                  <label>單期金額</label>
+                  <div class="val">${item.variableAmounts ? '每期不同' : fmt(item.periodAmt || 0)}</div>
+                </div>
+                <div class="field">
+                  <label>已還 / 總期數</label>
+                  <div class="val">${item.paidPeriods || 0} / ${item.periods || 0}</div>
+                </div>
+              ` : ''}
+              <div class="field">
+                <label>進度</label>
+                <div class="val">${progress.toFixed(0)}%</div>
+                <div class="progress-bar"><div class="fill" style="width:${progress}%"></div></div>
+              </div>
+              ${item.note ? `<div class="field full"><label>備註</label><div class="val">${escapeHtml(item.note)}</div></div>` : ''}
+              <div class="remain-box">
+                <div>
+                  ${!isFlex ? `<div class="periods">預估剩餘 ${remainP} 期</div>` : ''}
+                  <div class="amount">${isDone ? '已還清 ✓' : fmt(remain)}</div>
+                </div>
+                <div style="text-align:right;font-size:0.75rem;color:var(--muted)">
+                  已還<br>${fmt(Math.min(paid, total))}
+                </div>
+              </div>
+            </div>
+            <div class="card-actions">
+              ${!isDone ? `
+                ${!isFlex ? `<button class="btn btn-success" onclick="payOne('${item.id}')">還一期（${fmt(getNextPeriodAmt(item))}）</button>` : ''}
+                <button class="btn btn-pay-custom" onclick="openPayModal('${item.id}')">還多少錢</button>
+              ` : ''}
+              <button class="btn btn-outline" onclick="openEditModal('${item.id}')">編輯</button>
+              <button class="btn btn-danger" onclick="deleteItem('${item.id}')">刪除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    let editingPeriodAmounts = [];
+
+    function toggleVariableAmounts() {
+      const on = document.getElementById('fVariableAmounts').checked;
+      document.getElementById('variableAmountsContainer').style.display = on ? '' : 'none';
+      document.getElementById('periodAmtGroup').style.display = on ? 'none' : '';
+      if (on) generateVariableRows();
+    }
+
+    function onPeriodsChange() {
+      if (document.getElementById('fVariableAmounts').checked) {
+        generateVariableRows();
+      }
+    }
+
+    function generateVariableRows() {
+      const periods = parseInt(document.getElementById('fPeriods').value) || 0;
+      const defaultAmt = parseFloat(document.getElementById('fPeriodAmt').value) || 0;
+      const baseDateStr = document.getElementById('fDate').value;
+      const list = document.getElementById('variableAmountsList');
+      if (!periods) {
+        list.innerHTML = '<div style="font-size:0.8rem;color:var(--muted)">請先填寫還款期數</div>';
+        return;
+      }
+      let html = '';
+      for (let i = 0; i < periods; i++) {
+        const val = editingPeriodAmounts[i] !== undefined ? editingPeriodAmounts[i] : defaultAmt;
+        let label = `第${i + 1}期`;
+        if (baseDateStr) {
+          const d = new Date(baseDateStr + 'T00:00:00');
+          d.setMonth(d.getMonth() + i);
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          label = `第${i + 1}期 (${mm}/${dd})`;
+        }
+        html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="width:88px;font-size:0.78rem;color:var(--muted);flex-shrink:0">${label}</span>
+          <input type="number" class="var-amt-input" data-idx="${i}" value="${val}" min="0" style="flex:1" />
+        </div>`;
+      }
+      list.innerHTML = html;
+    }
+
+    function getVariableAmounts() {
+      return Array.from(document.querySelectorAll('.var-amt-input'))
+        .sort((a, b) => parseInt(a.dataset.idx) - parseInt(b.dataset.idx))
+        .map(inp => parseFloat(inp.value) || 0);
+    }
+
+    function selectMode(mode) {
+      document.getElementById('fMode').value = mode;
+      const isFlex = mode === 'flexible';
+      document.getElementById('modeBtnInstallment').classList.toggle('active', !isFlex);
+      document.getElementById('modeBtnFlexible').classList.toggle('active', isFlex);
+      document.getElementById('installmentFieldsRow1').style.display = isFlex ? 'none' : '';
+      document.getElementById('installmentFieldsRow2').style.display = isFlex ? 'none' : '';
+      document.getElementById('flexibleFieldsRow').style.display = isFlex ? '' : 'none';
+    }
+
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = '新增還款項目';
+      document.getElementById('editId').value = '';
+      document.getElementById('fDate').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('fAccount').value = '';
+      document.getElementById('fAmount').value = '';
+      document.getElementById('fInterest').value = '0';
+      document.getElementById('fReason').value = '';
+      document.getElementById('fPeriods').value = '';
+      document.getElementById('fPeriodAmt').value = '';
+      document.getElementById('fPaidPeriods').value = '0';
+      document.getElementById('fNote').value = '';
+      document.getElementById('fFlexPaid').value = '0';
+      document.getElementById('fNoteFlex').value = '';
+      document.getElementById('fReminderDate').value = '';
+      document.getElementById('fVariableAmounts').checked = false;
+      editingPeriodAmounts = [];
+      toggleVariableAmounts();
+      selectMode('installment');
+      document.getElementById('modal').classList.add('show');
+    }
+
+    function openEditModal(id) {
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+      document.getElementById('modalTitle').textContent = '編輯還款項目';
+      document.getElementById('editId').value = item.id;
+      document.getElementById('fDate').value = item.date || '';
+      document.getElementById('fAccount').value = item.account || '';
+      document.getElementById('fAmount').value = item.amount || '';
+      document.getElementById('fInterest').value = item.interest || 0;
+      document.getElementById('fReason').value = item.reason || '';
+      document.getElementById('fPeriods').value = item.periods || '';
+      document.getElementById('fPeriodAmt').value = item.periodAmt || '';
+      document.getElementById('fPaidPeriods').value = item.paidPeriods || 0;
+      document.getElementById('fNote').value = item.note || '';
+      document.getElementById('fFlexPaid').value = getActualPaid(item) || 0;
+      document.getElementById('fNoteFlex').value = item.note || '';
+      document.getElementById('fReminderDate').value = item.reminderDate || '';
+      document.getElementById('fVariableAmounts').checked = !!item.variableAmounts;
+      editingPeriodAmounts = Array.isArray(item.periodAmounts) ? item.periodAmounts : [];
+      toggleVariableAmounts();
+      selectMode(item.mode === 'flexible' ? 'flexible' : 'installment');
+      document.getElementById('modal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('show');
+    }
+
+    function saveItem() {
+      const id = document.getElementById('editId').value;
+      const mode = document.getElementById('fMode').value === 'flexible' ? 'flexible' : 'installment';
+      const amount = parseFloat(document.getElementById('fAmount').value) || 0;
+      const interest = parseFloat(document.getElementById('fInterest').value) || 0;
+
+      let data;
+
+      if (mode === 'flexible') {
+        const flexPaid = parseFloat(document.getElementById('fFlexPaid').value) || 0;
+        data = {
+          mode: 'flexible',
+          date: document.getElementById('fDate').value,
+          account: document.getElementById('fAccount').value.trim(),
+          amount,
+          interest,
+          reason: document.getElementById('fReason').value.trim(),
+          periods: 0,
+          periodAmt: 0,
+          paidPeriods: 0,
+          note: document.getElementById('fNoteFlex').value.trim(),
+          reminderDate: document.getElementById('fReminderDate').value,
+          actualPaid: flexPaid
+        };
+      } else {
+        let periods = parseInt(document.getElementById('fPeriods').value) || 0;
+        let periodAmt = parseFloat(document.getElementById('fPeriodAmt').value) || 0;
+        let paidPeriods = parseInt(document.getElementById('fPaidPeriods').value) || 0;
+        const variableAmounts = document.getElementById('fVariableAmounts').checked;
+        let periodAmounts = [];
+
+        if (variableAmounts) {
+          periodAmounts = getVariableAmounts();
+          if (!periodAmt && periodAmounts.length) {
+            periodAmt = Math.round(periodAmounts.reduce((a, b) => a + b, 0) / periodAmounts.length);
+          }
+        } else if (!periodAmt && periods > 0) {
+          periodAmt = Math.round((amount + interest) / periods);
+        }
+
+        data = {
+          mode: 'installment',
+          date: document.getElementById('fDate').value,
+          account: document.getElementById('fAccount').value.trim(),
+          amount,
+          interest,
+          reason: document.getElementById('fReason').value.trim(),
+          periods,
+          periodAmt,
+          paidPeriods,
+          note: document.getElementById('fNote').value.trim(),
+          reminderDate: document.getElementById('fReminderDate').value,
+          variableAmounts,
+          periodAmounts: variableAmounts ? periodAmounts : [],
+          actualPaid: variableAmounts
+            ? periodAmounts.slice(0, paidPeriods).reduce((a, b) => a + b, 0)
+            : paidPeriods * periodAmt
+        };
+      }
+
+      if (!data.account && !data.amount) {
+        showToast('請至少填寫帳戶或金額');
+        return;
+      }
+
+      if (id) {
+        const idx = items.findIndex(i => String(i.id) === String(id));
+        if (idx >= 0) {
+          const old = items[idx];
+          if (mode === 'installment') {
+            // keep existing actualPaid unless paidPeriods changed
+            if (old.actualPaid !== undefined && old.paidPeriods === data.paidPeriods && !!old.variableAmounts === data.variableAmounts) {
+              data.actualPaid = old.actualPaid;
+            } else if (data.variableAmounts) {
+              data.actualPaid = data.periodAmounts.slice(0, data.paidPeriods).reduce((a, b) => a + b, 0);
+            } else {
+              data.actualPaid = data.paidPeriods * data.periodAmt;
+            }
+          }
+          // 若提醒日期或備註有變更，清空舊的 calendarEventId 讓後端重建提醒（同步最新備註內容）
+          if (data.reminderDate !== old.reminderDate || data.note !== old.note) {
+            data.calendarEventId = '';
+          } else {
+            data.calendarEventId = old.calendarEventId || '';
+          }
+          items[idx] = { ...old, ...data };
+        }
+      } else {
+        items.push({ id: Date.now(), ...data });
+      }
+
+      save();
+      render();
+      closeModal();
+      showToast(id ? '已更新' : '已新增');
+    }
+
+    // ===== 還一期 =====
+    function payOne(id) {
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+
+      const remain = calcRemain(item);
+      if (remain <= 0) {
+        showToast('已經還清了');
+        return;
+      }
+
+      let payAmt;
+      if (item.variableAmounts && Array.isArray(item.periodAmounts) && item.periodAmounts.length > (item.paidPeriods || 0)) {
+        payAmt = item.periodAmounts[item.paidPeriods || 0] || 0;
+      } else {
+        payAmt = item.periodAmt || 0;
+      }
+      payAmt = Math.min(payAmt, remain);
+      if (payAmt <= 0) {
+        showToast('無法計算單期金額');
+        return;
+      }
+
+      // 跳出還款時間確認
+      openPayDateModal(id, payAmt, true);
+    }
+
+    function getNextPeriodAmt(item) {
+      if (item.variableAmounts && Array.isArray(item.periodAmounts)) {
+        return item.periodAmounts[item.paidPeriods || 0] || 0;
+      }
+      return item.periodAmt || 0;
+    }
+
+    // ===== 還多少錢 =====
+    function openPayModal(id) {
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+
+      const remain = calcRemain(item);
+      document.getElementById('payItemId').value = id;
+      document.getElementById('payHint').innerHTML = `
+        <strong>${escapeHtml(item.account || '')}</strong><br>
+        目前剩餘：<strong>${fmt(remain)}</strong>${item.mode !== 'flexible' ? `　｜　單期：${fmt(item.periodAmt || 0)}` : ''}
+      `;
+      document.getElementById('fPayAmount').value = '';
+
+      // quick amount buttons
+      const quick = document.getElementById('quickAmounts');
+      const suggestions = [];
+      if (item.periodAmt > 0) suggestions.push(item.periodAmt);
+      if (item.periodAmt > 0) suggestions.push(item.periodAmt * 2);
+      if (remain > 0 && remain !== item.periodAmt) suggestions.push(remain);
+      // unique
+      const uniq = [...new Set(suggestions)].filter(v => v > 0 && v <= remain);
+
+      quick.innerHTML = uniq.map(v =>
+        `<button type="button" onclick="document.getElementById('fPayAmount').value=${v}">${fmt(v)}</button>`
+      ).join('') || '<span style="font-size:0.8rem;color:#999">無快捷金額</span>';
+
+      document.getElementById('payModal').classList.add('show');
+      setTimeout(() => document.getElementById('fPayAmount').focus(), 300);
+    }
+
+    function closePayModal() {
+      document.getElementById('payModal').classList.remove('show');
+    }
+
+    // 從「還多少錢」進入日期確認
+    function goToPayDateConfirm() {
+      const id = document.getElementById('payItemId').value;
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+
+      let payAmt = parseFloat(document.getElementById('fPayAmount').value) || 0;
+      if (payAmt <= 0) {
+        showToast('請輸入有效金額');
+        return;
+      }
+
+      const remain = calcRemain(item);
+      if (payAmt > remain) {
+        if (!confirm(`輸入金額（${fmt(payAmt)}）超過剩餘（${fmt(remain)}），是否改為還清？`)) return;
+        payAmt = remain;
+      }
+
+      closePayModal();
+      openPayDateModal(id, payAmt, false);
+    }
+
+    // ===== 還款時間確認 Modal =====
+    function openPayDateModal(id, amount, isOnePeriod) {
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+
+      document.getElementById('payDateItemId').value = id;
+      document.getElementById('payDateAmount').value = amount;
+      document.getElementById('payDateIsOnePeriod').value = isOnePeriod ? '1' : '0';
+      document.getElementById('fPayDate').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('fPayDateAmtDisplay').value = fmt(amount);
+      document.getElementById('payDateHint').innerHTML = `
+        <strong>${escapeHtml(item.account || '未命名帳戶')}</strong><br>
+        ${isOnePeriod ? '還一期' : '自訂金額'}　｜　請確認還款日期後再記錄
+      `;
+      document.getElementById('payDateModal').classList.add('show');
+    }
+
+    function closePayDateModal() {
+      document.getElementById('payDateModal').classList.remove('show');
+    }
+
+    function confirmPayWithDate() {
+      const id = document.getElementById('payDateItemId').value;
+      const item = items.find(i => String(i.id) === String(id));
+      if (!item) return;
+
+      const payAmt = parseFloat(document.getElementById('payDateAmount').value) || 0;
+      const isOnePeriod = document.getElementById('payDateIsOnePeriod').value === '1';
+      const dateStr = document.getElementById('fPayDate').value || new Date().toISOString().slice(0, 10);
+
+      if (payAmt <= 0) {
+        showToast('金額無效');
+        return;
+      }
+
+      item.actualPaid = getActualPaid(item) + payAmt;
+
+      if (isOnePeriod) {
+        item.paidPeriods = (item.paidPeriods || 0) + 1;
+        if (item.periods && item.paidPeriods > item.periods) item.paidPeriods = item.periods;
+      } else if (item.periodAmt > 0) {
+        item.paidPeriods = Math.min(
+          item.periods || 999,
+          Math.floor(item.actualPaid / item.periodAmt)
+        );
+      }
+
+      logPayment(item, payAmt, dateStr);
+
+      save();
+      render();
+      closePayDateModal();
+      showToast(`已記錄還款 +${fmt(payAmt)}（${dateStr}）`);
+    }
+
+    function deleteItem(id) {
+      if (!confirm('確定要刪除這個項目嗎？')) return;
+      items = items.filter(i => String(i.id) !== String(id));
+      save();
+      render();
+      showToast('已刪除');
+    }
+
+    function clearAllData() {
+      if (!confirm('確定要清除全部資料嗎？此操作無法復原。')) return;
+      items = [];
+      paymentLog = [];
+      yearGoals = {};
+      savePaymentLog();
+      saveYearGoals();
+      save();
+      render();
+      showToast('已清除全部資料');
+    }
+
+    function exportData() {
+      const lines = [
+        '序號,日期,帳戶,金額,事由,還款期數,單期金額,利息金额,已還期數,已還金額,剩餘期數,剩餘金額,備註'
+      ];
+      items.forEach((item, i) => {
+        const remain = calcRemain(item);
+        const remainP = calcRemainPeriods(item);
+        const paid = getActualPaid(item);
+        lines.push([
+          i + 1,
+          item.date || '',
+          `"${(item.account || '').replace(/"/g, '""')}"`,
+          item.amount || 0,
+          `"${(item.reason || '').replace(/"/g, '""')}"`,
+          item.periods || 0,
+          item.periodAmt || 0,
+          item.interest || 0,
+          item.paidPeriods || 0,
+          Math.round(paid),
+          remainP,
+          Math.round(remain),
+          `"${(item.note || '').replace(/"/g, '""')}"`
+        ].join(','));
+      });
+      const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `還款記錄_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('已匯出 CSV');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // Auto-calc period amount suggestion
+    // ===== 建議還款計劃 =====
+    // 取得該項目「一個月建議還多少」
+    function getMonthlySuggest(item) {
+      if (!item) return 0;
+      if (item.mode === 'flexible') return 0;
+      if (item.variableAmounts) return getNextPeriodAmt(item) || 0;
+      return item.periodAmt || 0;
+    }
+
+    function openPlanModal() {
+      // 顯示有剩餘的項目（有提醒日期的優先，沒有也列出全部未還清）
+      let dueItems = items.filter(it => it.reminderDate && calcRemain(it) > 0);
+      if (dueItems.length === 0) {
+        dueItems = items.filter(it => calcRemain(it) > 0);
+      }
+      const dueList = document.getElementById('planDueList');
+      if (dueItems.length === 0) {
+        dueList.innerHTML = '<div style="color:var(--muted)">目前沒有尚未還清的項目</div>';
+      } else {
+        dueList.innerHTML = dueItems.map(it => {
+          const monthly = getMonthlySuggest(it);
+          const monthlyText = monthly > 0
+            ? `每月建議 ${fmt(monthly)}`
+            : (it.mode === 'flexible' ? '不分期（彈性）' : '未設定單期');
+          return `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border,#eee)">
+            <div style="min-width:0;flex:1;padding-right:8px">
+              <div style="font-weight:600">${escapeHtml(it.account || '未命名帳戶')}</div>
+              <div style="font-size:0.75rem;color:#2E75B6;margin-top:2px">${monthlyText}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="color:#c0392b;font-weight:600">${fmt(calcRemain(it))}</div>
+              <div style="font-size:0.7rem;color:var(--muted)">剩餘</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+      document.getElementById('fPlanBudget').value = '';
+      document.getElementById('planResult').innerHTML = '';
+      document.getElementById('planModal').classList.add('show');
+    }
+
+    function closePlanModal() {
+      document.getElementById('planModal').classList.remove('show');
+    }
+
+    function calcPlan() {
+      const budget = parseFloat(document.getElementById('fPlanBudget').value) || 0;
+      const resultBox = document.getElementById('planResult');
+
+      if (budget <= 0) {
+        resultBox.innerHTML = '<div style="color:var(--muted);font-size:0.85rem">請先輸入這個月的預算金額</div>';
+        return;
+      }
+
+      const unpaid = items
+        .map(it => ({ item: it, remain: calcRemain(it) }))
+        .filter(entry => entry.remain > 0)
+        .sort((a, b) => {
+          if ((b.item.interest || 0) !== (a.item.interest || 0)) return (b.item.interest || 0) - (a.item.interest || 0);
+          return a.remain - b.remain;
+        });
+
+      if (unpaid.length === 0) {
+        resultBox.innerHTML = '<div style="color:var(--muted);font-size:0.85rem">目前沒有未還清的項目</div>';
+        return;
+      }
+
+      let budgetLeft = budget;
+      let html = '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px">依「利息較高、金額較小」優先排序：</div>';
+
+      unpaid.forEach((entry, idx) => {
+        const alloc = Math.min(entry.remain, budgetLeft);
+        budgetLeft -= alloc;
+        if (alloc <= 0) return;
+        const monthly = getMonthlySuggest(entry.item);
+        const monthlyNote = monthly > 0
+          ? `每月建議 ${fmt(monthly)}`
+          : (entry.item.mode === 'flexible' ? '不分期' : '未設定單期');
+        html += `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border,#eee)">
+            <div>
+              <div style="font-weight:600">${idx + 1}. ${escapeHtml(entry.item.account || '未命名帳戶')}</div>
+              <div style="font-size:0.75rem;color:#2E75B6">${monthlyNote}</div>
+              <div style="font-size:0.75rem;color:var(--muted)">剩餘 ${fmt(entry.remain)}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="color:#1F4E79;font-weight:700">建議還 ${fmt(alloc)}</div>
+              <button class="btn btn-outline" style="padding:4px 10px;font-size:0.75rem;margin-top:4px" onclick="closePlanModal();openPayModal('${entry.item.id}')">記錄</button>
+            </div>
+          </div>`;
+      });
+
+      html += `<div style="margin-top:10px;font-size:0.85rem;color:var(--muted)">分配完畢後剩餘預算：${fmt(budgetLeft)}</div>`;
+      resultBox.innerHTML = html;
+    }
+
+    // ===== 年度還款統計 =====
+    function getAvailableYears() {
+      const years = new Set();
+      const thisYear = new Date().getFullYear();
+      years.add(thisYear);
+      paymentLog.forEach(p => years.add(parseInt(p.date.slice(0, 4))));
+      Object.keys(yearGoals).forEach(y => years.add(parseInt(y)));
+      return Array.from(years).sort((a, b) => b - a);
+    }
+
+    function openStatsModal() {
+      const years = getAvailableYears();
+      const sel = document.getElementById('fStatsYear');
+      const currentYear = new Date().getFullYear();
+      sel.innerHTML = years.map(y => `<option value="${y}">${y} 年</option>`).join('');
+      sel.value = years.includes(currentYear) ? currentYear : years[0];
+      renderStats();
+      document.getElementById('statsModal').classList.add('show');
+    }
+
+    function closeStatsModal() {
+      document.getElementById('statsModal').classList.remove('show');
+    }
+
+    function saveYearGoalInput() {
+      const year = document.getElementById('fStatsYear').value;
+      const goal = parseFloat(document.getElementById('fYearGoal').value) || 0;
+      yearGoals[year] = goal;
+      saveYearGoals();
+      syncToCloud();
+      showToast(`已儲存 ${year} 年目標`);
+      renderStats();
+    }
+
+    let statsViewMode = 'chart';
+
+    function setStatsView(mode) {
+      statsViewMode = mode;
+      document.getElementById('statsViewChartBtn').classList.toggle('active', mode === 'chart');
+      document.getElementById('statsViewListBtn').classList.toggle('active', mode === 'list');
+      document.getElementById('statsChart').style.display = mode === 'chart' ? '' : 'none';
+      document.getElementById('statsList').style.display = mode === 'list' ? '' : 'none';
+    }
+
+    function renderStats() {
+      const year = document.getElementById('fStatsYear').value;
+      document.getElementById('fYearGoal').value = yearGoals[year] || '';
+
+      const monthly = new Array(12).fill(0);
+      let yearTotal = 0;
+      paymentLog.forEach(p => {
+        if (p.date.slice(0, 4) === String(year)) {
+          const m = parseInt(p.date.slice(5, 7)) - 1;
+          monthly[m] += p.amount;
+          yearTotal += p.amount;
+        }
+      });
+
+      const goal = yearGoals[year] || 0;
+      const pct = goal > 0 ? Math.min(100, (yearTotal / goal * 100)) : 0;
+
+      document.getElementById('statsSummary').innerHTML = `
+        <div class="remain-box" style="background:#eef4fb">
+          <div>
+            <div class="periods">${year} 年實際還款</div>
+            <div class="amount" style="color:#1F4E79">${fmt(yearTotal)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.75rem;color:var(--muted)">目標</div>
+            <div style="font-weight:700">${goal > 0 ? fmt(goal) : '未設定'}</div>
+          </div>
+        </div>
+        ${goal > 0 ? `
+          <div class="progress-bar" style="margin-top:8px"><div class="fill" style="width:${pct}%"></div></div>
+          <div style="text-align:right;font-size:0.8rem;color:var(--muted);margin-top:2px">達成率 ${pct.toFixed(1)}%</div>
+        ` : ''}
+      `;
+
+      document.getElementById('statsChart').innerHTML = buildMonthlyChart(monthly);
+      document.getElementById('statsList').innerHTML = buildMonthlyList(monthly, yearTotal);
+      setStatsView(statsViewMode);
+    }
+
+    function buildMonthlyList(monthly, yearTotal) {
+      const labels = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+      let rows = monthly.map((v, i) => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border,#eee)">
+          <span>${labels[i]}</span>
+          <span style="font-weight:600;color:${v > 0 ? '#1F4E79' : 'var(--muted)'}">${fmt(v)}</span>
+        </div>
+      `).join('');
+      rows += `
+        <div style="display:flex;justify-content:space-between;padding:10px 0;margin-top:4px;border-top:2px solid var(--border,#ccc);font-weight:700">
+          <span>全年合計</span>
+          <span style="color:#1F4E79">${fmt(yearTotal)}</span>
+        </div>
+      `;
+      return rows;
+    }
+
+    function buildMonthlyChart(monthly) {
+      const labels = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+      const w = 320, h = 210, padL = 36, padB = 24, padT = 26;
+      const chartW = w - padL - 10, chartH = h - padB - padT;
+      const maxVal = Math.max(1, ...monthly);
+      const barW = chartW / 12 * 0.6;
+      const step = chartW / 12;
+
+      let bars = '';
+      let labelsSvg = '';
+      monthly.forEach((v, i) => {
+        const barH = (v / maxVal) * chartH;
+        const x = padL + i * step + (step - barW) / 2;
+        const y = padT + chartH - barH;
+        bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" fill="#1F4E79" rx="2"></rect>`;
+        if (v > 0) {
+          bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" font-size="7.5" text-anchor="middle" fill="#1F4E79">${Math.round(v).toLocaleString('zh-TW')}</text>`;
+        }
+        labelsSvg += `<text x="${(x + barW / 2).toFixed(1)}" y="${h - padB + 12}" font-size="8" text-anchor="middle" fill="#888">${labels[i]}</text>`;
+      });
+
+      return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto">
+        <line x1="${padL}" y1="${padT + chartH}" x2="${w - 10}" y2="${padT + chartH}" stroke="#ddd" />
+        ${bars}
+        ${labelsSvg}
+      </svg>`;
+    }
+
+    document.getElementById('fAmount').addEventListener('input', suggestPeriodAmt);
+    document.getElementById('fInterest').addEventListener('input', suggestPeriodAmt);
+    document.getElementById('fPeriods').addEventListener('input', suggestPeriodAmt);
+    document.getElementById('fDate').addEventListener('change', function() {
+      if (document.getElementById('fVariableAmounts').checked) generateVariableRows();
+    });
+
+    function suggestPeriodAmt() {
+      const amt = parseFloat(document.getElementById('fAmount').value) || 0;
+      const interest = parseFloat(document.getElementById('fInterest').value) || 0;
+      const periods = parseInt(document.getElementById('fPeriods').value) || 0;
+      const current = document.getElementById('fPeriodAmt').value;
+      if (periods > 0 && !current) {
+        document.getElementById('fPeriodAmt').placeholder = `建議 ${Math.round((amt + interest) / periods)}`;
+      }
+    }
+
+    // ===== 還款時間明細清單 =====
+    function openHistoryModal() {
+      const accounts = [...new Set(paymentLog.map(p => p.account || '未命名帳戶'))].sort();
+      const years = [...new Set(paymentLog.map(p => (p.date || '').slice(0, 4)).filter(Boolean))].sort((a, b) => b - a);
+
+      const accSel = document.getElementById('fHistoryAccount');
+      accSel.innerHTML = '<option value="">全部帳戶</option>' +
+        accounts.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+
+      const yearSel = document.getElementById('fHistoryYear');
+      yearSel.innerHTML = '<option value="">全部年份</option>' +
+        years.map(y => `<option value="${y}">${y} 年</option>`).join('');
+
+      renderHistory();
+      document.getElementById('historyModal').classList.add('show');
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.remove('show');
+    }
+
+    function getFilteredHistory() {
+      const acc = document.getElementById('fHistoryAccount').value;
+      const year = document.getElementById('fHistoryYear').value;
+      return paymentLog
+        .filter(p => {
+          if (acc && (p.account || '未命名帳戶') !== acc) return false;
+          if (year && !(p.date || '').startsWith(year)) return false;
+          return true;
+        })
+        .slice()
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    }
+
+    function renderHistory() {
+      const list = getFilteredHistory();
+      const sum = list.reduce((s, p) => s + (p.amount || 0), 0);
+      document.getElementById('historySummary').textContent =
+        `共 ${list.length} 筆　｜　合計 ${fmt(sum)}`;
+
+      const box = document.getElementById('historyList');
+      if (list.length === 0) {
+        box.innerHTML = '<div class="empty" style="padding:24px"><p>尚無還款記錄</p></div>';
+        return;
+      }
+
+      box.innerHTML = list.map((p, idx) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border,#eee)">
+          <div>
+            <div style="font-weight:600;font-size:0.9rem">${escapeHtml(p.account || '未命名帳戶')}</div>
+            <div style="font-size:0.75rem;color:var(--muted)">${p.date || '—'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700;color:#1F4E79">${fmt(p.amount)}</div>
+            <button class="btn btn-outline" style="padding:2px 8px;font-size:0.7rem;margin-top:4px"
+              onclick="deleteHistoryEntry(${paymentLog.indexOf(p)})">刪除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function deleteHistoryEntry(idx) {
+      if (idx < 0 || idx >= paymentLog.length) return;
+      if (!confirm('確定要刪除這筆還款記錄嗎？\n（不會自動回退項目的已還金額）')) return;
+      paymentLog.splice(idx, 1);
+      savePaymentLog();
+      syncToCloud();
+      renderHistory();
+      showToast('已刪除還款記錄');
+    }
+
+    function exportHistory() {
+      const list = getFilteredHistory();
+      const lines = ['日期,帳戶,還款金額,項目ID'];
+      list.forEach(p => {
+        lines.push([
+          p.date || '',
+          `"${(p.account || '').replace(/"/g, '""')}"`,
+          Math.round(p.amount || 0),
+          p.itemId || ''
+        ].join(','));
+      });
+      const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `還款明細_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('已匯出還款明細 CSV');
+    }
+
+    // ===== 還款進度（依月份分組） =====
+    const SCH_COLORS = [
+      '#F4A261', '#9B5DE5', '#00BBF9', '#00F5D4', '#FEE440',
+      '#F15BB5', '#2E75B6', '#548235', '#E07A5F', '#3D405B'
+    ];
+
+    function colorForAccount(name) {
+      let h = 0;
+      const s = String(name || '');
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+      return SCH_COLORS[h % SCH_COLORS.length];
+    }
+
+    function buildScheduleEntries() {
+      const entries = [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      items.forEach(item => {
+        if (item.mode === 'flexible') return;
+        const periods = parseInt(item.periods) || 0;
+        if (periods <= 0) return;
+
+        const baseStr = item.date || item.reminderDate;
+        if (!baseStr) return;
+        const base = new Date(baseStr + 'T00:00:00');
+        if (isNaN(base.getTime())) return;
+
+        const paidP = parseInt(item.paidPeriods) || 0;
+        const account = item.account || '未命名帳戶';
+        const color = colorForAccount(account);
+
+        for (let i = 0; i < periods; i++) {
+          const d = new Date(base);
+          d.setMonth(d.getMonth() + i);
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const dateStr = `${yyyy}-${mm}-${dd}`;
+          const monthKey = `${yyyy}-${mm}`;
+
+          let amt;
+          if (item.variableAmounts && Array.isArray(item.periodAmounts) && item.periodAmounts[i] != null) {
+            amt = Number(item.periodAmounts[i]) || 0;
+          } else {
+            amt = Number(item.periodAmt) || 0;
+          }
+
+          const isPaid = i < paidP;
+          const isOverdue = !isPaid && d < today;
+
+          entries.push({
+            itemId: item.id,
+            account,
+            color,
+            periodIndex: i + 1,
+            periods,
+            amount: amt,
+            date: dateStr,
+            monthKey,
+            isPaid,
+            isOverdue
+          });
+        }
+      });
+
+      return entries;
+    }
+
+    let scheduleOpenMonths = {};
+
+    function openScheduleModal() {
+      const accounts = [...new Set(items.map(i => i.account || '未命名帳戶'))].sort();
+      const sel = document.getElementById('fScheduleAccount');
+      sel.innerHTML = '<option value="">全部帳戶</option>' +
+        accounts.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+      scheduleOpenMonths = {};
+      // 預設展開本月與有逾期的月份
+      const nowKey = new Date().toISOString().slice(0, 7);
+      scheduleOpenMonths[nowKey] = true;
+      renderSchedule();
+      document.getElementById('scheduleModal').classList.add('show');
+    }
+
+    function closeScheduleModal() {
+      document.getElementById('scheduleModal').classList.remove('show');
+    }
+
+    function toggleScheduleMonth(key) {
+      scheduleOpenMonths[key] = !scheduleOpenMonths[key];
+      renderSchedule();
+    }
+
+    function renderSchedule() {
+      const accFilter = document.getElementById('fScheduleAccount').value;
+      const range = document.getElementById('fScheduleRange').value;
+      const thisYear = String(new Date().getFullYear());
+
+      let entries = buildScheduleEntries();
+      if (accFilter) entries = entries.filter(e => e.account === accFilter);
+      if (range === 'upcoming') entries = entries.filter(e => !e.isPaid);
+      if (range === 'thisyear') entries = entries.filter(e => e.monthKey.startsWith(thisYear));
+
+      // group by month
+      const groups = {};
+      entries.forEach(e => {
+        if (!groups[e.monthKey]) groups[e.monthKey] = [];
+        groups[e.monthKey].push(e);
+      });
+      const months = Object.keys(groups).sort();
+
+      const totalAmt = entries.reduce((s, e) => s + e.amount, 0);
+      const unpaidAmt = entries.filter(e => !e.isPaid).reduce((s, e) => s + e.amount, 0);
+      document.getElementById('scheduleSummary').textContent =
+        `共 ${entries.length} 期　｜　合計 ${fmt(totalAmt)}　｜　未還 ${fmt(unpaidAmt)}`;
+
+      const box = document.getElementById('scheduleList');
+      if (months.length === 0) {
+        box.innerHTML = '<div class="empty" style="padding:24px"><p>尚無分期排程<br>請先新增「分期」項目並填寫日期與期數</p></div>';
+        return;
+      }
+
+      // 第一次：若完全沒開過任何月，預設開第一個有未還的月
+      if (Object.keys(scheduleOpenMonths).length === 0) {
+        const firstUnpaid = months.find(m => groups[m].some(e => !e.isPaid));
+        if (firstUnpaid) scheduleOpenMonths[firstUnpaid] = true;
+        else scheduleOpenMonths[months[0]] = true;
+      }
+
+      box.innerHTML = months.map(m => {
+        const list = groups[m].slice().sort((a, b) => a.date.localeCompare(b.date));
+        const monthTotal = list.reduce((s, e) => s + e.amount, 0);
+        const unpaidCount = list.filter(e => !e.isPaid).length;
+        const isOpen = !!scheduleOpenMonths[m];
+        const arrow = isOpen ? '▴' : '▾';
+
+        let body = '';
+        if (isOpen) {
+          body = list.map(e => {
+            let badgeClass = '';
+            let badgeText = `${e.periodIndex}/${e.periods}期`;
+            if (e.isPaid) { badgeClass = 'paid'; badgeText += ' 已還'; }
+            else if (e.isOverdue) { badgeClass = 'overdue'; badgeText += ' 逾期'; }
+            return `
+              <div class="sch-item">
+                <div class="sch-dot" style="background:${e.color}"></div>
+                <div class="sch-item-main">
+                  <div class="sch-item-name">
+                    ${escapeHtml(e.account)}
+                    <span class="sch-badge ${badgeClass}">${badgeText}</span>
+                  </div>
+                </div>
+                <div class="sch-item-right">
+                  <div class="sch-item-amt" style="color:${e.isPaid ? '#548235' : '#1F4E79'}">${fmt(e.amount)}</div>
+                  <div class="sch-item-date">${e.date}</div>
+                </div>
+              </div>`;
+          }).join('');
+        }
+
+        return `
+          <div class="sch-month">
+            <div class="sch-month-head" onclick="toggleScheduleMonth('${m}')">
+              <span>${m}${unpaidCount > 0 && unpaidCount < list.length ? ` · 剩${unpaidCount}期` : ''}</span>
+              <span><span class="sch-total">${fmt(monthTotal)}</span> ${arrow}</span>
+            </div>
+            ${isOpen ? `<div class="sch-month-body">${body}</div>` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    // Close modals on overlay click
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+    document.getElementById('payModal').addEventListener('click', function(e) {
+      if (e.target === this) closePayModal();
+    });
+    document.getElementById('payDateModal').addEventListener('click', function(e) {
+      if (e.target === this) closePayDateModal();
+    });
+    document.getElementById('planModal').addEventListener('click', function(e) {
+      if (e.target === this) closePlanModal();
+    });
+    document.getElementById('statsModal').addEventListener('click', function(e) {
+      if (e.target === this) closeStatsModal();
+    });
+    document.getElementById('historyModal').addEventListener('click', function(e) {
+      if (e.target === this) closeHistoryModal();
+    });
+    document.getElementById('scheduleModal').addEventListener('click', function(e) {
+      if (e.target === this) closeScheduleModal();
+    });
+
+    // Enter key on pay amount → go to date confirm
+    document.getElementById('fPayAmount').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') goToPayDateConfirm();
+    });
+
+    loadLocalExtras();
+    load();
+  </script>
+</body>
+</html>
